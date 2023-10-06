@@ -6,6 +6,17 @@ namespace Windows_form
 {
     public partial class FrmCalculadora : Form
     {
+        private Calculadora calculadora = new Calculadora("Thomas Marino");
+        private double getOperador(string valor)
+        {
+            if (double.TryParse(valor, out double valorParseado))
+            {
+                return valorParseado;
+            }
+            return double.NaN;
+        }
+
+
         public FrmCalculadora()
         {
             InitializeComponent();
@@ -33,12 +44,18 @@ namespace Windows_form
             TxbOperando2.ResetText();
             TxbResultado.ResetText();
             CbSeleccionOperador.ResetText();
-            CbSeleccionOperador.Enabled = true;
-            TxbOperando1.Enabled = true;
-            TxbOperando2.Enabled = true;
-            BtnOperar.Enabled = true;
+            this.calculadora.EliminarHistorialDeOperaciones();
+            this.TxbOperando1.Text = string.Empty;
+            this.TxbOperando2.Text = string.Empty;
+            this.MostrarHistorial();
+
         }
         // ---------------- Boton de operar.
+        private void MostrarHistorial()
+        {
+            this.LstBoxHistorial.DataSource = null;
+            this.LstBoxHistorial.DataSource = this.calculadora.Operaciones;
+        }
         private void BtnOperar_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(TxbOperando1.Text))
@@ -49,11 +66,23 @@ namespace Windows_form
             {
                 TxbOperando2.Text = "0";
             }
-            setResultado();
-            CbSeleccionOperador.Enabled = false;
-            TxbOperando1.Enabled = false;
-            TxbOperando2.Enabled = false;
-            BtnOperar.Enabled = false;
+            char operador;
+            calculadora.PrimerOperando = this.GetOperando(this.TxbOperando1.Text);
+            calculadora.SegundoOperando = this.GetOperando(this.TxbOperando2.Text);
+            operador = (char)this.CbSeleccionOperador.SelectedItem;
+            this.calculadora.Calcular(operador);
+            this.calculadora.ActualizaHistorialDeOperaciones(operador);
+            this.TxbResultado.Text = calculadora.Resultado.Valor;
+            LstBoxHistorial.Items.Add($"{TxbResultado.Text}");
+        }
+
+        private Numeracion GetOperando(string value)
+        {
+            if (calculadora.Sistema == ESistema.Binario)
+            {
+                return new SistemaBinario(value);
+            }
+            return new SistemaDecimal(value);
         }
         // ---------------- Radio Buttons ----------------.
         private void radioButton1_CheckedChanged(object sender, EventArgs e)
@@ -69,7 +98,6 @@ namespace Windows_form
             {
                 if (TxbResultado.Text != "") // Paso de decimal a binario si el usuario ya ingreso una operacion.
                 {
-
                 }
             }
         }
@@ -88,7 +116,7 @@ namespace Windows_form
         }
         private void FrmCalculadora_Load(object sender, EventArgs e)
         {
-
+            this.CbSeleccionOperador.DataSource = new char[] { '+', '-', '*', '/' };
         }
     }
 }
